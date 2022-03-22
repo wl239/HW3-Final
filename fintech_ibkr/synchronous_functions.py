@@ -8,7 +8,7 @@ from datetime import datetime
 default_hostname = '127.0.0.1'
 default_port = 7497
 default_client_id = 10645 # can set and use your Master Client ID
-timeout_sec = 5
+timeout_sec = 10
 
 def fetch_managed_accounts(hostname=default_hostname, port=default_port,
                            client_id=default_client_id):
@@ -19,7 +19,7 @@ def fetch_managed_accounts(hostname=default_hostname, port=default_port,
     start_time = datetime.now()
     while not app.isConnected():
         time.sleep(0.01)
-        if (start_time - datetime.now()).seconds > timeout_sec:
+        if (datetime.now() - start_time).seconds > timeout_sec:
             raise Exception(
                 "fetch_managed_accounts",
                 "timeout",
@@ -34,6 +34,7 @@ def fetch_managed_accounts(hostname=default_hostname, port=default_port,
     while isinstance(app.next_valid_id, type(None)):
         time.sleep(0.01)
     app.disconnect()
+    print(app.DISCONNECTED)
     return app.managed_accounts
 
 def fetch_current_time(hostname=default_hostname,
@@ -43,7 +44,7 @@ def fetch_current_time(hostname=default_hostname,
     start_time = datetime.now()
     while not app.isConnected():
         time.sleep(0.01)
-        if (start_time - datetime.now()).seconds > timeout_sec:
+        if (datetime.now() - start_time).seconds > timeout_sec:
             raise Exception(
                 "fetch_current_time",
                 "timeout",
@@ -58,7 +59,7 @@ def fetch_current_time(hostname=default_hostname,
     start_time = datetime.now()
     while isinstance(app.next_valid_id, type(None)):
         time.sleep(0.01)
-        if (start_time - datetime.now()).seconds > timeout_sec:
+        if (datetime.now() - start_time).seconds > timeout_sec:
             raise Exception(
                 "fetch_current_time",
                 "timeout",
@@ -69,7 +70,7 @@ def fetch_current_time(hostname=default_hostname,
     start_time = datetime.now()
     while isinstance(app.current_time, type(None)):
         time.sleep(0.01)
-        if (start_time - datetime.now()).seconds > timeout_sec:
+        if (datetime.now() - start_time).seconds > timeout_sec:
             raise Exception(
                 "fetch_current_time",
                 "timeout",
@@ -88,7 +89,7 @@ def fetch_historical_data(contract, endDateTime='', durationStr='30 D',
     start_time = datetime.now()
     while not app.isConnected():
         time.sleep(0.01)
-    if (start_time - datetime.now()).seconds > timeout_sec:
+    if (datetime.now() - start_time).seconds > timeout_sec:
         raise Exception(
             "fetch_historical_data",
             "timeout",
@@ -102,7 +103,7 @@ def fetch_historical_data(contract, endDateTime='', durationStr='30 D',
     start_time = datetime.now()
     while isinstance(app.next_valid_id, type(None)):
         time.sleep(0.01)
-        if (start_time - datetime.now()).seconds > timeout_sec:
+        if (datetime.now() - start_time).seconds > timeout_sec:
             raise Exception(
                 "fetch_historical_data",
                 "timeout",
@@ -115,7 +116,7 @@ def fetch_historical_data(contract, endDateTime='', durationStr='30 D',
     start_time = datetime.now()
     while app.historical_data_end != tickerId:
         time.sleep(0.01)
-        if (start_time - datetime.now()).seconds > timeout_sec:
+        if (datetime.now() - start_time).seconds > timeout_sec:
             raise Exception(
                 "fetch_historical_data",
                 "timeout",
@@ -131,7 +132,7 @@ def fetch_contract_details(contract, hostname=default_hostname,
     start_time = datetime.now()
     while not app.isConnected():
         time.sleep(0.01)
-        if (start_time - datetime.now()).seconds > timeout_sec:
+        if (datetime.now() - start_time).seconds > timeout_sec:
             raise Exception(
                 "fetch_contract_details",
                 "timeout",
@@ -146,7 +147,7 @@ def fetch_contract_details(contract, hostname=default_hostname,
     start_time = datetime.now()
     while isinstance(app.next_valid_id, type(None)):
         time.sleep(0.01)
-        if (start_time - datetime.now()).seconds > timeout_sec:
+        if (datetime.now() - start_time).seconds > timeout_sec:
             raise Exception(
                 "fetch_contract_details",
                 "timeout",
@@ -159,7 +160,7 @@ def fetch_contract_details(contract, hostname=default_hostname,
     start_time = datetime.now()
     while app.contract_details_end != tickerId:
         time.sleep(0.01)
-        if (start_time - datetime.now()).seconds > timeout_sec:
+        if (datetime.now() - start_time).seconds > timeout_sec:
             raise Exception(
                 "fetch_contract_details",
                 "timeout",
@@ -167,4 +168,5 @@ def fetch_contract_details(contract, hostname=default_hostname,
             )
 
     app.disconnect()
+
     return app.contract_details

@@ -11,10 +11,6 @@ contract.secType  = 'CASH'
 contract.exchange = 'IDEALPRO'  # 'IDEALPRO' is the currency exchange.
 contract.currency = value.split(".")[1]
 
-import sys
-sys.stdout.write('wadup')
-sys.stdout.flush()
-
 # Get your contract details
 contract_details = fetch_contract_details(contract)
 

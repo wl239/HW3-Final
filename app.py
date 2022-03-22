@@ -1,10 +1,14 @@
+import time
+
 import dash
 import plotly.graph_objects as go
 from dash.dependencies import Input, Output, State
 from ibapi.contract import Contract
+from ibapi.order import Order
 from fintech_ibkr import *
 from dash import dcc
 from dash import html
+from dash.exceptions import PreventUpdate
 import dash_daq as daq
 
 # Make a Dash app!
@@ -12,6 +16,11 @@ app = dash.Dash(__name__)
 
 # Define the layout.
 app.layout = html.Div([
+    html.Div(
+        id='sync-connection-status',
+        children='False',
+        style={'display': 'none'}
+    ),
     html.Div([
         # Section title
         html.H3("Section 1: Fetch & Display exchange rate historical data"),
@@ -151,7 +160,8 @@ app.layout = html.Div([
         ),
         html.Br(),
         html.Button('TEST SYNC CONNECTION', id='connect-button', n_clicks=0),
-        html.Div(id='connect-indicator')
+        html.Div(id='connect-indicator'),
+        html.Div(id='contract-details')
     ],
         style={'width': '365px', 'display': 'inline-block'}
     ),
@@ -184,18 +194,23 @@ app.layout = html.Div([
 ])
 
 @app.callback(
-    Output(component_id="connect-indicator", component_property="children"),
-    Input(component_id="connect-button", component_property="n_clicks")
+    [
+        Output("connect-indicator", "children"),
+        Output("sync-connection-status", "children")
+    ],
+    Input("connect-button", "n_clicks")
 )
 def update_connect_indicator(n_clicks):
-    managed_accounts = fetch_managed_accounts()
-    return managed_accounts
-
-# Callback for what to do when submit-button is pressed
-
-# You are here. Add in:
-# 1) callback for contract details
-# 2) dependency of connect-indicator
+    try:
+        managed_accounts = fetch_managed_accounts()
+        message = "Connection successful! Managed accounts: " + ", ".join(
+            managed_accounts)
+        sync_connection_status = "True"
+    except Exception as inst:
+        x, y, z = inst.args
+        message = "Error in " + x + ": " + y + ". " + z
+        sync_connection_status = "False"
+    return message, sync_connection_status
 
 @app.callback(
     [ # there's more than one output here, so you have to use square brackets to
@@ -213,7 +228,8 @@ def update_connect_indicator(n_clicks):
     #   DOES get passed in to the function.
     [State('currency-input', 'value'), State('what-to-show', 'value'),
      State('edt-date', 'date'), State('edt-hour', 'value'),
-     State('edt-minute', 'value'), State('edt-second', 'value')]
+     State('edt-minute', 'value'), State('edt-second', 'value')],
+    prevent_initial_call = True
 )
 def update_candlestick_graph(n_clicks, currency_string, what_to_show,
                              edt_date, edt_hour, edt_minute, edt_second):
@@ -231,6 +247,10 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
     contract.secType  = 'CASH'
     contract.exchange = 'IDEALPRO' # 'IDEALPRO' is the currency exchange.
     contract.currency = currency_string.split(".")[1]
+
+    contract_details = fetch_contract_details(contract)
+
+    # time.sleep(5)
 
     ############################################################################
     ############################################################################
@@ -269,7 +289,7 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
     ############################################################################
     ############################################################################
 
-    currency_string = 'default Apple price data fetch'
+    currency_string = "fetched data for: " + contract_details
 
     # Return your updated text to currency-output, and the figure to
     #   candlestick-graph outputs
@@ -294,12 +314,12 @@ def trade(n_clicks, action, trade_currency, trade_amt):
     # Make the message that we want to send back to trade-output
     msg = action + ' ' + trade_amt + ' ' + trade_currency
 
-    # Make our trade_order object -- a DICTIONARY.
-    trade_order = {
-        "action": action,
-        "trade_currency": trade_currency,
-        "trade_amt": trade_amt
-    }
+    order = Order()
+    order.action = action
+    order.orderType = "MKT"
+    order.totalQuantity = trade_amt
+
+
 
     # Return the message, which goes to the trade-output div's children
     return msg
