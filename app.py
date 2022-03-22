@@ -289,7 +289,7 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
     ############################################################################
     ############################################################################
 
-    currency_string = "fetched data for: " + contract_details
+    currency_string = "fetched data for: " + str(contract_details).split(",")[10]
 
     # Return your updated text to currency-output, and the figure to
     #   candlestick-graph outputs
