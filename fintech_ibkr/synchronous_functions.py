@@ -4,6 +4,7 @@ from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
 import threading
 import time
+from datetime import datetime
 
 # If you want different default values, configure it here.
 default_hostname = '127.0.0.1'
@@ -18,6 +19,7 @@ class ibkr_app(EWrapper, EClient):
             'reqId', 'errorCode', 'errorString'
         ])
         self.next_valid_id = None
+        self.current_time = None
         ########################################################################
         # Here, you'll need to change Line 30 to initialize
         # self.historical_data as a dataframe having the column names you
@@ -49,6 +51,9 @@ class ibkr_app(EWrapper, EClient):
     def nextValidId(self, orderId: int):
         self.next_valid_id = orderId
 
+    def currentTime(self, time:int):
+        self.current_time = datetime.fromtimestamp(time)
+
     def historicalData(self, reqId, bar):
         # YOUR CODE GOES HERE: Turn "bar" into a pandas dataframe, formatted
         #   so that it's accepted by the plotly candlestick function.
@@ -68,7 +73,6 @@ class ibkr_app(EWrapper, EClient):
             [self.historical_data, bar_df],
             ignore_index=True
         )
-
 
     def historicalDataEnd(self, reqId: int, start: str, end: str):
         self.historical_data_end = reqId
@@ -97,9 +101,8 @@ def fetch_managed_accounts(hostname=default_hostname, port=default_port,
     app.disconnect()
     return app.managed_accounts
 
-def fetch_managed_accounts(hostname=default_hostname, port=default_port,
-                           client_id=default_client_id):
-
+def fetch_current_time(hostname=default_hostname,
+                          port=default_port, client_id=default_client_id):
     app = ibkr_app()
     app.connect(hostname, port, client_id)
     while not app.isConnected():
@@ -112,8 +115,13 @@ def fetch_managed_accounts(hostname=default_hostname, port=default_port,
     api_thread.start()
     while isinstance(app.next_valid_id, type(None)):
         time.sleep(0.01)
+
+    app.reqCurrentTime()
+    while isinstance(app.current_time, type(None)):
+        time.sleep(0.01)
     app.disconnect()
-    return app.managed_accounts
+    return app.current_time
+
 
 def fetch_historical_data(contract, endDateTime='', durationStr='30 D',
                           barSizeSetting='1 hour', whatToShow='MIDPOINT',
