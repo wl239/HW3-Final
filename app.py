@@ -1,20 +1,160 @@
 import dash
 import plotly.graph_objects as go
-from dash import dcc
-from dash import html
 from dash.dependencies import Input, Output, State
 from ibapi.contract import Contract
 from fintech_ibkr import *
-from layout_first_col import first_col
-from layout_second_col import second_col
+from dash import dcc
+from dash import html
+import dash_daq as daq
 
 # Make a Dash app!
 app = dash.Dash(__name__)
 
 # Define the layout.
 app.layout = html.Div([
-    first_col,
-    second_col,
+    html.Div([
+        # Section title
+        html.H3("Section 1: Fetch & Display exchange rate historical data"),
+        html.H4("Select value for whatToShow:"),
+        html.Div(
+            dcc.Dropdown(
+                ["TRADES", "MIDPOINT", "BID", "ASK", "BID_ASK", "ADJUSTED_LAST",
+                 "HISTORICAL_VOLATILITY", "OPTION_IMPLIED_VOLATILITY",
+                 'REBATE_RATE', 'FEE_RATE', "YIELD_BID", "YIELD_ASK",
+                 'YIELD_BID_ASK', 'YIELD_LAST', "SCHEDULE"],
+                "MIDPOINT",
+                id='what-to-show'
+            )
+        ),
+        html.H4("Select value for endDateTime:"),
+        html.Div(
+            children=[
+                html.P(
+                    "You may select a specific endDateTime for the call to " + \
+                    "fetch_historical_data. If any of the below is empty, " + \
+                    "the current present moment will be used."
+                )
+            ]
+        ),
+        html.Div(
+            children=[
+                html.Div(
+                    children=[
+                        html.Label('Date:'),
+                        dcc.DatePickerSingle(id='edt-date')
+                    ],
+                    style={
+                        'display': 'inline-block',
+                        'margin-right': '20px',
+                    }
+                ),
+                html.Div(
+                    children=[
+                        html.Label('Hour:'),
+                        dcc.Dropdown(list(range(24)), id='edt-hour'),
+                    ],
+                    style={
+                        'display': 'inline-block',
+                        'padding-right': '5px'
+                    }
+                ),
+                html.Div(
+                    children=[
+                        html.Label('Minute:'),
+                        dcc.Dropdown(list(range(60)), id='edt-minute'),
+                    ],
+                    style={
+                        'display': 'inline-block',
+                        'padding-right': '5px'
+                    }
+                ),
+                html.Div(
+                    children=[
+                        html.Label('Second:'),
+                        dcc.Dropdown(list(range(60)), id='edt-second'),
+                    ],
+                    style={'display': 'inline-block'}
+                )
+            ]
+        ),
+        html.H4("Use RTH?"),
+        html.Div(
+            children=[
+                daq.ToggleSwitch(
+                    id='use-rth',
+                    value=False
+                )
+            ]
+        ),
+        html.H4("Enter a currency pair:"),
+        html.P(
+            children=[
+                "See the various currency pairs here: ",
+                html.A(
+                    "currency pairs",
+                    href=('https://www.interactivebrokers.com/en/index.php?f'
+                          '=2222&exch=ibfxpro&showcategories=FX')
+                )
+            ]
+        ),
+        # Currency pair text input, within its own div.
+        html.Div(
+            # The input object itself
+            ["Input Currency: ", dcc.Input(
+                id='currency-input', value='AUD.CAD', type='text'
+            )],
+            # Style it so that the submit button appears beside the input.
+            style={'display': 'inline-block', 'padding-top': '5px'}
+        ),
+        # Submit button
+        html.Button('Submit', id='submit-button', n_clicks=0),
+        # Div for initial instructions and the updated info once submit is pressed
+        html.Div(
+            id='currency-output',
+            children='Enter a currency code and press submit'),
+    ],
+        style={'width': '365px', 'display': 'inline-block'}
+    ),
+    html.Div([
+        html.Div([
+            html.H4(
+                'Hostname: ',
+                style={'display': 'inline-block', 'margin-right': 20}
+            ),
+            dcc.Input(
+                id='default-host',
+                value='127.0.0.01',
+                type='text',
+                style={'display': 'inline-block'}
+            ),
+            html.H4(
+                'Port: ',
+                style={'display': 'inline-block', 'margin-right': 59}
+            ),
+            dcc.Input(
+                id='default-port',
+                value='7497',
+                type='text',
+                style={'display': 'inline-block'}
+            ),
+            html.H4(
+                'Client ID: ',
+                style={'display': 'inline-block', 'margin-right': 27}
+            ),
+            dcc.Input(
+                id='default-clientid',
+                value='10645',
+                type='text',
+                style={'display': 'inline-block'}
+            )
+        ]
+        ),
+        html.Br(),
+        html.Button('TEST SYNC CONNECTION', id='connect-button', n_clicks=0),
+        html.Div(id='connect-indicator')
+    ],
+        style={'width': '365px', 'display': 'inline-block'}
+    ),
     # Line break
     html.Br(),
     # Div to hold the candlestick graph
@@ -51,15 +191,17 @@ def update_connect_indicator(n_clicks):
     managed_accounts = fetch_managed_accounts()
     return managed_accounts
 
-
-
 # Callback for what to do when submit-button is pressed
+
+# You are here. Add in:
+# 1) callback for contract details
+# 2) dependency of connect-indicator
+
 @app.callback(
     [ # there's more than one output here, so you have to use square brackets to
         # pass it in as an array.
         Output(component_id='currency-output', component_property='children'),
-        Output(component_id='candlestick-graph', component_property='figure'),
-        Output(component_id='candlestick-graph', component_property='style')
+        Output(component_id='candlestick-graph', component_property='figure')
     ],
     Input('submit-button', 'n_clicks'),
     # The callback function will run when the submit button's n_clicks
@@ -131,8 +273,7 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
 
     # Return your updated text to currency-output, and the figure to
     #   candlestick-graph outputs
-    return ('Submitted query for ' + currency_string), go.Figure(), \
-           {'display':'none'}
+    return ('Submitted query for ' + currency_string), fig
 
 # Callback for what to do when trade-button is pressed
 @app.callback(
