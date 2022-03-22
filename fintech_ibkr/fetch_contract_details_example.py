@@ -1,9 +1,4 @@
 
-# This is an example of a test script.
-# When you've correctly coded your 'historicalData' override method in
-#  synchronous_functions.py, this script should return a dataframe that's
-#  ready to be loaded into the candlestick graph constructor.
-
 from ibapi.contract import Contract
 from fintech_ibkr import *
 
@@ -16,9 +11,12 @@ contract.secType  = 'CASH'
 contract.exchange = 'IDEALPRO'  # 'IDEALPRO' is the currency exchange.
 contract.currency = value.split(".")[1]
 
+import sys
+sys.stdout.write('wadup')
+sys.stdout.flush()
+
 # Get your contract details
 contract_details = fetch_contract_details(contract)
-
 
 str(contract_details).split(",")[10]
 
