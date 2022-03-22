@@ -5,104 +5,18 @@ from dash import html
 from dash.dependencies import Input, Output, State
 from ibapi.contract import Contract
 from fintech_ibkr import *
-import pandas as pd
+from layout_first_col import first_col
+from layout_second_col import second_col
 
 # Make a Dash app!
 app = dash.Dash(__name__)
 
 # Define the layout.
 app.layout = html.Div([
-
-    # Section title
-    html.H3("Section 1: Fetch & Display exchange rate historical data"),
-    html.H4("Select value for whatToShow:"),
-    html.Div(
-        dcc.Dropdown(
-            ["TRADES", "MIDPOINT", "BID", "ASK", "BID_ASK", "ADJUSTED_LAST",
-             "HISTORICAL_VOLATILITY", "OPTION_IMPLIED_VOLATILITY", 'REBATE_RATE',
-             'FEE_RATE', "YIELD_BID", "YIELD_ASK", 'YIELD_BID_ASK', 'YIELD_LAST',
-             "SCHEDULE"],
-            "MIDPOINT",
-            id='what-to-show'
-        ),
-        style = {'width': '365px'}
-    ),
-    html.H4("Select value for endDateTime:"),
-    html.Div(
-        children = [
-            html.P("You may select a specific endDateTime for the call to " + \
-                   "fetch_historical_data. If any of the below is left empty, " + \
-                   "the current present moment will be used.")
-        ],
-        style = {'width': '365px'}
-    ),
-    html.Div(
-        children = [
-            html.Div(
-                children = [
-                    html.Label('Date:'),
-                    dcc.DatePickerSingle(id='edt-date')
-                ],
-                style = {
-                    'display': 'inline-block',
-                    'margin-right': '20px',
-                }
-            ),
-            html.Div(
-                children = [
-                    html.Label('Hour:'),
-                    dcc.Dropdown(list(range(24)), id='edt-hour'),
-                ],
-                style = {
-                    'display': 'inline-block',
-                    'padding-right': '5px'
-                }
-            ),
-            html.Div(
-                children = [
-                    html.Label('Minute:'),
-                    dcc.Dropdown(list(range(60)), id='edt-minute'),
-                ],
-                style = {
-                    'display': 'inline-block',
-                    'padding-right': '5px'
-                }
-            ),
-            html.Div(
-                children = [
-                    html.Label('Second:'),
-                    dcc.Dropdown(list(range(60)), id='edt-second'),
-                ],
-                style = {'display': 'inline-block'}
-            )
-        ]
-    ),
-
-    html.H4("Enter a currency pair:"),
-    html.P(
-        children=[
-            "See the various currency pairs here: ",
-            html.A(
-                "currency pairs",
-                href='https://www.interactivebrokers.com/en/index.php?f=2222&exch=ibfxpro&showcategories=FX'
-            )
-        ]
-    ),
-    # Currency pair text input, within its own div.
-    html.Div(
-        # The input object itself
-        ["Input Currency: ", dcc.Input(
-            id='currency-input', value='AUD.CAD', type='text'
-        )],
-        # Style it so that the submit button appears beside the input.
-        style={'display': 'inline-block', 'padding-top': '5px'}
-    ),
-    # Submit button
-    html.Button('Submit', id='submit-button', n_clicks=0),
+    first_col,
+    second_col,
     # Line break
     html.Br(),
-    # Div to hold the initial instructions and the updated info once submit is pressed
-    html.Div(id='currency-output', children='Enter a currency code and press submit'),
     # Div to hold the candlestick graph
     html.Div([dcc.Graph(id='candlestick-graph')]),
     # Another line break
@@ -129,26 +43,39 @@ app.layout = html.Div([
 
 ])
 
+@app.callback(
+    Output(component_id="connect-indicator", component_property="children"),
+    Input(component_id="connect-button", component_property="n_clicks")
+)
+def update_connect_indicator(n_clicks):
+    managed_accounts = fetch_managed_accounts()
+    return managed_accounts
+
+
+
 # Callback for what to do when submit-button is pressed
 @app.callback(
-    [ # there's more than one output here, so you have to use square brackets to pass it in as an array.
+    [ # there's more than one output here, so you have to use square brackets to
+        # pass it in as an array.
         Output(component_id='currency-output', component_property='children'),
-        Output(component_id='candlestick-graph', component_property='figure')
+        Output(component_id='candlestick-graph', component_property='figure'),
+        Output(component_id='candlestick-graph', component_property='style')
     ],
     Input('submit-button', 'n_clicks'),
-    # The callback function will
-    # fire when the submit button's n_clicks changes
-    # The currency input's value is passed in as a "State" because if the user is typing and the value changes, then
-    #   the callback function won't run. But the callback does run because the submit button was pressed, then the value
-    #   of 'currency-input' at the time the button was pressed DOES get passed in.
+    # The callback function will run when the submit button's n_clicks
+    #   changes because the user pressed "submit".
+    # The currency input's value is passed in as a "State" because if the user
+    #   is typing and the value changes, then the callback function won't run.
+    # But when the callback does run because the submit button was pressed,
+    #   then the value of 'currency-input' at the time the button was pressed
+    #   DOES get passed in to the function.
     [State('currency-input', 'value'), State('what-to-show', 'value'),
      State('edt-date', 'date'), State('edt-hour', 'value'),
      State('edt-minute', 'value'), State('edt-second', 'value')]
 )
 def update_candlestick_graph(n_clicks, currency_string, what_to_show,
                              edt_date, edt_hour, edt_minute, edt_second):
-    # n_clicks doesn't
-    # get used, we only include it for the dependency.
+    # n_clicks doesn't get used, we only include it for the dependency.
 
     if any([i is None for i in [edt_date, edt_hour, edt_minute, edt_second]]):
         endDateTime = ''
@@ -170,14 +97,14 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
     # Make the historical data request.
     # Where indicated below, you need to make a REACTIVE INPUT for each one of
     #   the required inputs for req_historical_data().
-    # This resource should help a lot: https://dash.plotly.com/dash-core-components
+    # This resource should help: https://dash.plotly.com/dash-core-components
 
     # Some default values are provided below to help with your testing.
     # Don't forget -- you'll need to update the signature in this callback
     #   function to include your new vars!
     cph = fetch_historical_data(
         contract=contract,
-        endDateTime='',
+        endDateTime=endDateTime,
         durationStr='30 D',
         barSizeSetting='1 hour',
         whatToShow=what_to_show,
@@ -202,22 +129,26 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
 
     currency_string = 'default Apple price data fetch'
 
-    # Return your updated text to currency-output, and the figure to candlestick-graph outputs
-    return ('Submitted query for ' + currency_string), fig
+    # Return your updated text to currency-output, and the figure to
+    #   candlestick-graph outputs
+    return ('Submitted query for ' + currency_string), go.Figure(), \
+           {'display':'none'}
 
 # Callback for what to do when trade-button is pressed
 @app.callback(
     # We're going to output the result to trade-output
     Output(component_id='trade-output', component_property='children'),
-    # We only want to run this callback function when the trade-button is pressed
+    # Only run this callback function when the trade-button is pressed
     Input('trade-button', 'n_clicks'),
-    # We DON'T want to run this function whenever buy-or-sell, trade-currency, or trade-amt is updated, so we pass those
-    #   in as States, not Inputs:
-    [State('buy-or-sell', 'value'), State('trade-currency', 'value'), State('trade-amt', 'value')],
-    # We DON'T want to start executing trades just because n_clicks was initialized to 0!!!
+    # We DON'T want to run this function whenever buy-or-sell, trade-currency,
+    #   or trade-amt is updated, so we pass those in as States, not Inputs:
+    [State('buy-or-sell', 'value'), State('trade-currency', 'value'),
+     State('trade-amt', 'value')],
+    # DON'T start executing trades just because n_clicks was initialized to 0!!!
     prevent_initial_call=True
 )
-def trade(n_clicks, action, trade_currency, trade_amt): # Still don't use n_clicks, but we need the dependency
+def trade(n_clicks, action, trade_currency, trade_amt):
+    # Still don't use n_clicks, but we need the dependency
 
     # Make the message that we want to send back to trade-output
     msg = action + ' ' + trade_amt + ' ' + trade_currency
@@ -229,7 +160,7 @@ def trade(n_clicks, action, trade_currency, trade_amt): # Still don't use n_clic
         "trade_amt": trade_amt
     }
 
-    # Return the message, which goes to the trade-output div's "children" attribute.
+    # Return the message, which goes to the trade-output div's children
     return msg
 
 # Run it!
