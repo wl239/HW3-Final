@@ -21,9 +21,9 @@ app.layout = html.Div([
         children='False',
         style={'display': 'none'}
     ),
+    # Section title
+    html.H3("Section 1: Fetch & Display exchange rate historical data"),
     html.Div([
-        # Section title
-        html.H3("Section 1: Fetch & Display exchange rate historical data"),
         html.H4("Select value for whatToShow:"),
         html.Div(
             dcc.Dropdown(
@@ -83,14 +83,64 @@ app.layout = html.Div([
                 )
             ]
         ),
-        html.H4("Use RTH?"),
+        html.H4("Select value for durationStr:"),
         html.Div(
             children=[
-                daq.ToggleSwitch(
-                    id='use-rth',
-                    value=False
+                html.Div(
+                    children=[
+                        html.Label('Amount:'),
+                        dcc.Input(
+                            id='duration-amount',
+                            value=30,
+                            type='number',
+                            style={'display': 'inline-block', 'width': '75px'}
+                        )
+                    ],
+                    style={
+                        'display': 'inline-block',
+                        'margin-right': '20px',
+                    }
+                ),
+                html.Div(
+                    children=[
+                        html.Label('Unit:', style={'display': 'inline-block'}),
+                        dcc.Dropdown(
+                            options = [
+                                {'label': 'Seconds', 'value': 'S'},
+                                {'label': 'Days', 'value': 'D'},
+                                {'label': 'Weeks', 'value': 'W'},
+                                {'label': 'Months', 'value': 'M'},
+                                {'label': 'Years', 'value': 'Y'}
+                            ],
+                            id='duration-unit',
+                            value='D',
+                            style={
+                                'width': '75px',
+                                'display': 'inline-block',
+                                'vertical-align': 'middle'
+                            }
+                        ),
+                    ],
+                    style={
+                        'display': 'inline-block',
+                        'padding-right': '5px',
+                        'vertical-align': 'middle'
+                    }
                 )
             ]
+        ),
+        html.H4("Use RTH?", style={'display': 'inline-block'}),
+        html.Div(
+            children=[
+                html.P("NO", style={'display': 'inline-block'}),
+                daq.ToggleSwitch(
+                    id='use-rth',
+                    value=False,
+                    style={'display': 'inline-block'}
+                ),
+                html.P("YES", style={'display': 'inline-block'}),
+            ],
+            style={'display': 'inline-block', 'padding-left': '10px'}
         ),
         html.H4("Enter a currency pair:"),
         html.P(
@@ -170,7 +220,8 @@ app.layout = html.Div([
         html.Div(id='connect-indicator'),
         html.Div(id='contract-details')
     ],
-        style={'width': '405px', 'display': 'inline-block'}
+        style={'width': '405px', 'display': 'inline-block',
+               'vertical-align': 'top', 'padding-left': '15px'}
     ),
     # Line break
     html.Br(),
@@ -241,13 +292,16 @@ def update_connect_indicator(n_clicks, host, port, clientid):
     [State('currency-input', 'value'), State('what-to-show', 'value'),
      State('edt-date', 'date'), State('edt-hour', 'value'),
      State('edt-minute', 'value'), State('edt-second', 'value'),
-     State('sync-connection-status', 'children'), State("host", "value"),
-     State("port", "value"), State("clientid", "value")],
+     State('sync-connection-status', 'children'), State('use-rth', 'value'),
+     State('duration-amount', 'value'), State('duration-unit', 'value'),
+     State('host', 'value'), State('port', 'value'),
+     State('clientid', 'value')],
     prevent_initial_call = True
 )
 def update_candlestick_graph(n_clicks, currency_string, what_to_show,
                              edt_date, edt_hour, edt_minute, edt_second,
-                             conn_status, host, port, clientid):
+                             conn_status, use_rth, duration_amount,
+                             duration_unit, host, port, clientid):
     if not bool(conn_status):
         return '', go.Figure()
 
@@ -280,7 +334,6 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
                       '{:0>2}'.format(edt_hour) + ":" + \
                       '{:0>2}'.format(edt_minute)
 
-
     # time.sleep(5)
 
     ############################################################################
@@ -298,10 +351,10 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
     cph = fetch_historical_data(
         contract=contract,
         endDateTime=endDateTime,
-        durationStr='30 D',
+        durationStr=str(duration_amount) + " " + duration_unit,
         barSizeSetting='1 hour',
         whatToShow=what_to_show,
-        useRTH=True,
+        useRTH=use_rth,
         hostname=host,
         port=port,
         client_id=clientid
