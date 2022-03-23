@@ -8,18 +8,19 @@ from datetime import datetime
 default_hostname = '127.0.0.1'
 default_port = 7497
 default_client_id = 10645 # can set and use your Master Client ID
-timeout_sec = 10
+timeout_sec = 5
 
 def fetch_managed_accounts(hostname=default_hostname, port=default_port,
                            client_id=default_client_id):
 
     app = ibkr_app()
-    app.connect(hostname, port, client_id)
+    app.connect(hostname, int(port), int(client_id))
 
     start_time = datetime.now()
     while not app.isConnected():
         time.sleep(0.01)
         if (datetime.now() - start_time).seconds > timeout_sec:
+            app.disconnect()
             raise Exception(
                 "fetch_managed_accounts",
                 "timeout",
@@ -34,17 +35,17 @@ def fetch_managed_accounts(hostname=default_hostname, port=default_port,
     while isinstance(app.next_valid_id, type(None)):
         time.sleep(0.01)
     app.disconnect()
-    print(app.DISCONNECTED)
     return app.managed_accounts
 
 def fetch_current_time(hostname=default_hostname,
                        port=default_port, client_id=default_client_id):
     app = ibkr_app()
-    app.connect(hostname, port, client_id)
+    app.connect(hostname, int(port), int(client_id))
     start_time = datetime.now()
     while not app.isConnected():
         time.sleep(0.01)
         if (datetime.now() - start_time).seconds > timeout_sec:
+            app.disconnect()
             raise Exception(
                 "fetch_current_time",
                 "timeout",
@@ -60,6 +61,7 @@ def fetch_current_time(hostname=default_hostname,
     while isinstance(app.next_valid_id, type(None)):
         time.sleep(0.01)
         if (datetime.now() - start_time).seconds > timeout_sec:
+            app.disconnect()
             raise Exception(
                 "fetch_current_time",
                 "timeout",
@@ -71,6 +73,7 @@ def fetch_current_time(hostname=default_hostname,
     while isinstance(app.current_time, type(None)):
         time.sleep(0.01)
         if (datetime.now() - start_time).seconds > timeout_sec:
+            app.disconnect()
             raise Exception(
                 "fetch_current_time",
                 "timeout",
@@ -85,11 +88,12 @@ def fetch_historical_data(contract, endDateTime='', durationStr='30 D',
                           useRTH=True, hostname=default_hostname,
                           port=default_port, client_id=default_client_id):
     app = ibkr_app()
-    app.connect(hostname, port, client_id)
+    app.connect(hostname, int(port), int(client_id))
     start_time = datetime.now()
     while not app.isConnected():
         time.sleep(0.01)
     if (datetime.now() - start_time).seconds > timeout_sec:
+        app.disconnect()
         raise Exception(
             "fetch_historical_data",
             "timeout",
@@ -104,6 +108,7 @@ def fetch_historical_data(contract, endDateTime='', durationStr='30 D',
     while isinstance(app.next_valid_id, type(None)):
         time.sleep(0.01)
         if (datetime.now() - start_time).seconds > timeout_sec:
+            app.disconnect()
             raise Exception(
                 "fetch_historical_data",
                 "timeout",
@@ -117,6 +122,7 @@ def fetch_historical_data(contract, endDateTime='', durationStr='30 D',
     while app.historical_data_end != tickerId:
         time.sleep(0.01)
         if (datetime.now() - start_time).seconds > timeout_sec:
+            app.disconnect()
             raise Exception(
                 "fetch_historical_data",
                 "timeout",
@@ -128,11 +134,12 @@ def fetch_historical_data(contract, endDateTime='', durationStr='30 D',
 def fetch_contract_details(contract, hostname=default_hostname,
                            port=default_port, client_id=default_client_id):
     app = ibkr_app()
-    app.connect(hostname, port, client_id)
+    app.connect(hostname, int(port), int(client_id))
     start_time = datetime.now()
     while not app.isConnected():
         time.sleep(0.01)
         if (datetime.now() - start_time).seconds > timeout_sec:
+            app.disconnect()
             raise Exception(
                 "fetch_contract_details",
                 "timeout",
@@ -148,6 +155,7 @@ def fetch_contract_details(contract, hostname=default_hostname,
     while isinstance(app.next_valid_id, type(None)):
         time.sleep(0.01)
         if (datetime.now() - start_time).seconds > timeout_sec:
+            app.disconnect()
             raise Exception(
                 "fetch_contract_details",
                 "timeout",
@@ -161,6 +169,7 @@ def fetch_contract_details(contract, hostname=default_hostname,
     while app.contract_details_end != tickerId:
         time.sleep(0.01)
         if (datetime.now() - start_time).seconds > timeout_sec:
+            app.disconnect()
             raise Exception(
                 "fetch_contract_details",
                 "timeout",

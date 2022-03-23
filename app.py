@@ -8,8 +8,8 @@ from ibapi.order import Order
 from fintech_ibkr import *
 from dash import dcc
 from dash import html
-from dash.exceptions import PreventUpdate
 import dash_daq as daq
+from datetime import date
 
 # Make a Dash app!
 app = dash.Dash(__name__)
@@ -27,10 +27,7 @@ app.layout = html.Div([
         html.H4("Select value for whatToShow:"),
         html.Div(
             dcc.Dropdown(
-                ["TRADES", "MIDPOINT", "BID", "ASK", "BID_ASK", "ADJUSTED_LAST",
-                 "HISTORICAL_VOLATILITY", "OPTION_IMPLIED_VOLATILITY",
-                 'REBATE_RATE', 'FEE_RATE', "YIELD_BID", "YIELD_ASK",
-                 'YIELD_BID_ASK', 'YIELD_LAST', "SCHEDULE"],
+                ["MIDPOINT", "BID", "ASK", "BID_ASK", "HISTORICAL_VOLATILITY"],
                 "MIDPOINT",
                 id='what-to-show'
             )
@@ -122,39 +119,49 @@ app.layout = html.Div([
             id='currency-output',
             children='Enter a currency code and press submit'),
     ],
-        style={'width': '365px', 'display': 'inline-block'}
+        style={'width': '405px', 'display': 'inline-block'}
     ),
     html.Div([
         html.Div([
-            html.H4(
-                'Hostname: ',
-                style={'display': 'inline-block', 'margin-right': 20}
+            html.Div([
+                html.H4(
+                    'Hostname: ',
+                    style={'display': 'inline-block', 'margin-right': 20}
+                ),
+                dcc.Input(
+                    id='host',
+                    value='127.0.0.1',
+                    type='text',
+                    style={'display': 'inline-block'}
+                )],
+                style = {'display': 'inline-block'}
             ),
-            dcc.Input(
-                id='default-host',
-                value='127.0.0.01',
-                type='text',
-                style={'display': 'inline-block'}
+            html.Div([
+                html.H4(
+                    'Port: ',
+                    style={'display': 'inline-block', 'margin-right': 59}
+                ),
+                dcc.Input(
+                    id='port',
+                    value='7497',
+                    type='text',
+                    style={'display': 'inline-block'}
+                )],
+                style = {'display': 'inline-block'}
             ),
-            html.H4(
-                'Port: ',
-                style={'display': 'inline-block', 'margin-right': 59}
-            ),
-            dcc.Input(
-                id='default-port',
-                value='7497',
-                type='text',
-                style={'display': 'inline-block'}
-            ),
-            html.H4(
-                'Client ID: ',
-                style={'display': 'inline-block', 'margin-right': 27}
-            ),
-            dcc.Input(
-                id='default-clientid',
-                value='10645',
-                type='text',
-                style={'display': 'inline-block'}
+            html.Div([
+                html.H4(
+                    'Client ID: ',
+                    style={'display': 'inline-block', 'margin-right': 27}
+                ),
+                dcc.Input(
+                    id='clientid',
+                    value='10645',
+                    type='text',
+                    style={'display': 'inline-block'}
+                )
+            ],
+                style = {'display': 'inline-block'}
             )
         ]
         ),
@@ -163,12 +170,16 @@ app.layout = html.Div([
         html.Div(id='connect-indicator'),
         html.Div(id='contract-details')
     ],
-        style={'width': '365px', 'display': 'inline-block'}
+        style={'width': '405px', 'display': 'inline-block'}
     ),
     # Line break
     html.Br(),
     # Div to hold the candlestick graph
-    html.Div([dcc.Graph(id='candlestick-graph')]),
+    dcc.Loading(
+        id="loading-1",
+        type="default",
+        children=html.Div([dcc.Graph(id='candlestick-graph')])
+    ),
     # Another line break
     html.Br(),
     # Section title
@@ -198,11 +209,12 @@ app.layout = html.Div([
         Output("connect-indicator", "children"),
         Output("sync-connection-status", "children")
     ],
-    Input("connect-button", "n_clicks")
+    Input("connect-button", "n_clicks"),
+    [State("host", "value"), State("port", "value"), State("clientid", "value")]
 )
-def update_connect_indicator(n_clicks):
+def update_connect_indicator(n_clicks, host, port, clientid):
     try:
-        managed_accounts = fetch_managed_accounts()
+        managed_accounts = fetch_managed_accounts(host, port, clientid)
         message = "Connection successful! Managed accounts: " + ", ".join(
             managed_accounts)
         sync_connection_status = "True"
@@ -228,17 +240,16 @@ def update_connect_indicator(n_clicks):
     #   DOES get passed in to the function.
     [State('currency-input', 'value'), State('what-to-show', 'value'),
      State('edt-date', 'date'), State('edt-hour', 'value'),
-     State('edt-minute', 'value'), State('edt-second', 'value')],
+     State('edt-minute', 'value'), State('edt-second', 'value'),
+     State('sync-connection-status', 'children'), State("host", "value"),
+     State("port", "value"), State("clientid", "value")],
     prevent_initial_call = True
 )
 def update_candlestick_graph(n_clicks, currency_string, what_to_show,
-                             edt_date, edt_hour, edt_minute, edt_second):
-    # n_clicks doesn't get used, we only include it for the dependency.
-
-    if any([i is None for i in [edt_date, edt_hour, edt_minute, edt_second]]):
-        endDateTime = ''
-    else:
-        print(edt_date, edt_hour, edt_minute, edt_second)
+                             edt_date, edt_hour, edt_minute, edt_second,
+                             conn_status, host, port, clientid):
+    if not bool(conn_status):
+        return '', go.Figure()
 
     # First things first -- what currency pair history do you want to fetch?
     # Define it as a contract object!
@@ -248,7 +259,27 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
     contract.exchange = 'IDEALPRO' # 'IDEALPRO' is the currency exchange.
     contract.currency = currency_string.split(".")[1]
 
-    contract_details = fetch_contract_details(contract)
+    try:
+        contract_details = fetch_contract_details(contract, hostname=host,
+                                                  port=port, client_id=clientid)
+    except:
+        return ("No contract found for " + currency_string), go.Figure()
+
+    contract_symbol_ibkr = str(contract_details).split(",")[10]
+
+    # If the contract name doesn't equal the one you want:
+    if not contract_symbol_ibkr == currency_string:
+        return ("Requested contract: " + currency_string + " but received " + \
+                "contract: " + contract_symbol_ibkr), go.Figure()
+
+    if any([i is None for i in [edt_date, edt_hour, edt_minute, edt_second]]):
+        endDateTime = ''
+    else:
+        endDateTime = str(edt_date).replace("-","") + " " + \
+                      '{:0>2}'.format(edt_hour) + ":" + \
+                      '{:0>2}'.format(edt_hour) + ":" + \
+                      '{:0>2}'.format(edt_minute)
+
 
     # time.sleep(5)
 
@@ -270,7 +301,10 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
         durationStr='30 D',
         barSizeSetting='1 hour',
         whatToShow=what_to_show,
-        useRTH=True
+        useRTH=True,
+        hostname=host,
+        port=port,
+        client_id=clientid
     )
     # # Make the candlestick figure
     fig = go.Figure(
@@ -285,15 +319,17 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
         ]
     )
     # # Give the candlestick figure a title
-    fig.update_layout(title=('Exchange Rate: ' + currency_string))
+    fig.update_layout(
+        title=('Exchange Rate: ' + currency_string + ': ' + what_to_show)
+    )
     ############################################################################
     ############################################################################
 
-    currency_string = "fetched data for: " + str(contract_details).split(",")[10]
+    currency_string = "fetched data for: " + contract_symbol_ibkr
 
     # Return your updated text to currency-output, and the figure to
     #   candlestick-graph outputs
-    return ('Submitted query for ' + currency_string), fig
+    return currency_string, fig
 
 # Callback for what to do when trade-button is pressed
 @app.callback(
@@ -304,11 +340,12 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
     # We DON'T want to run this function whenever buy-or-sell, trade-currency,
     #   or trade-amt is updated, so we pass those in as States, not Inputs:
     [State('buy-or-sell', 'value'), State('trade-currency', 'value'),
-     State('trade-amt', 'value')],
+     State('trade-amt', 'value'), State("host", "value"),
+     State("port", "value"), State("clientid", "value")],
     # DON'T start executing trades just because n_clicks was initialized to 0!!!
     prevent_initial_call=True
 )
-def trade(n_clicks, action, trade_currency, trade_amt):
+def trade(n_clicks, action, trade_currency, trade_amt, host, port, clientid):
     # Still don't use n_clicks, but we need the dependency
 
     # Make the message that we want to send back to trade-output
@@ -318,8 +355,6 @@ def trade(n_clicks, action, trade_currency, trade_amt):
     order.action = action
     order.orderType = "MKT"
     order.totalQuantity = trade_amt
-
-
 
     # Return the message, which goes to the trade-output div's children
     return msg
