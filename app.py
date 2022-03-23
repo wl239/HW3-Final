@@ -83,6 +83,26 @@ app.layout = html.Div([
                 )
             ]
         ),
+        html.H4(
+            "Select value for barSizeSetting:",
+            style={'display': 'inline-block'}
+        ),
+        dcc.Dropdown(
+            options = [
+                '1 secs', '5 secs', '10 secs', '15 secs', '30 secs', '1 min',
+                '2 mins', '3 mins',	'5 mins', '10 mins', '15 mins',
+                '20 mins', '30 mins', '1 hour',	'2 hours',	'3 hours',
+                '4 hours', '8 hours',  '1 day', '1 week', '1 month'
+            ],
+            id='bar-size',
+            value='1 hour',
+            style={
+                'width': '75px',
+                'display': 'inline-block',
+                'vertical-align': 'middle',
+                'padding-left': '15px'
+            }
+        ),
         html.H4("Select value for durationStr:"),
         html.Div(
             children=[
@@ -292,15 +312,16 @@ def update_connect_indicator(n_clicks, host, port, clientid):
     [State('currency-input', 'value'), State('what-to-show', 'value'),
      State('edt-date', 'date'), State('edt-hour', 'value'),
      State('edt-minute', 'value'), State('edt-second', 'value'),
-     State('sync-connection-status', 'children'), State('use-rth', 'value'),
-     State('duration-amount', 'value'), State('duration-unit', 'value'),
-     State('host', 'value'), State('port', 'value'),
+     State('sync-connection-status', 'children'), State('bar-size', 'value'),
+     State('use-rth', 'value'), State('duration-amount', 'value'),
+     State('duration-unit', 'value'), State('host', 'value'),
+     State('port', 'value'),
      State('clientid', 'value')],
     prevent_initial_call = True
 )
 def update_candlestick_graph(n_clicks, currency_string, what_to_show,
                              edt_date, edt_hour, edt_minute, edt_second,
-                             conn_status, use_rth, duration_amount,
+                             conn_status, bar_size, use_rth, duration_amount,
                              duration_unit, host, port, clientid):
     if not bool(conn_status):
         return '', go.Figure()
@@ -352,7 +373,7 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
         contract=contract,
         endDateTime=endDateTime,
         durationStr=str(duration_amount) + " " + duration_unit,
-        barSizeSetting='1 hour',
+        barSizeSetting=bar_size,
         whatToShow=what_to_show,
         useRTH=use_rth,
         hostname=host,
