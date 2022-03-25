@@ -2,22 +2,35 @@
 from ibapi.contract import Contract
 from fintech_ibkr import *
 
-value = "EUR.USD" # This is what your text input looks like on your app
+# Contract object: CURRENCY PAIR
+contract_cp = Contract()
+contract_cp.symbol = 'EUR'
+contract_cp.secType  = 'CASH'
+contract_cp.exchange = 'IDEALPRO'  # 'IDEALPRO' is the currency exchange.
+contract_cp.currency = 'USD'
 
-# Create a contract object
-contract = Contract()
-contract.symbol = value.split(".")[0]
-contract.secType  = 'CASH'
-contract.exchange = 'IDEALPRO'  # 'IDEALPRO' is the currency exchange.
-contract.currency = value.split(".")[1]
+# Contract object: STOCK
+contract_stk = Contract()
+contract_stk.symbol = "TSLA"
+contract_stk.secType = "STK"
+contract_stk.currency = "USD"
+contract_stk.exchange = "SMART"
+contract_stk.primaryExchange = "ARCA"
+
+# Contract object: CRYPTO
+contract_crypto = Contract();
+contract_crypto.symbol = "ETH"
+contract_crypto.secType = "CRYPTO"
+contract_crypto.currency = "USD"
+contract_crypto.exchange = "PAXOS"
 
 # Get your contract details
-contract_details = fetch_contract_details(contract)
+cp_details = fetch_contract_details(contract_cp)
+stk_details = fetch_contract_details(contract_stk)
+crypto_details = fetch_contract_details(contract_crypto)
 
-str(contract_details).split(",")[10]
-
-contract_details
-
-print(contract_details)
+print(cp_details)
+print(stk_details)
+print(crypto_details)
 
 # This script is an excellent place for scratch work as you figure this out.

@@ -29,6 +29,7 @@ class ibkr_app(EWrapper, EClient):
         self.historical_data_end = ''
         self.contract_details = ''
         self.contract_details_end = ''
+        self.matching_symbols = None
 
     def error(self, reqId, errorCode, errorString):
         self.error_messages = pd.concat(
@@ -48,30 +49,47 @@ class ibkr_app(EWrapper, EClient):
         self.current_time = datetime.fromtimestamp(time)
 
     def historicalData(self, reqId, bar):
-        # YOUR CODE GOES HERE: Turn "bar" into a pandas dataframe, formatted
-        #   so that it's accepted by the plotly candlestick function.
-        # Take a look at candlestick_plot.ipynb for some help!
-        # assign the dataframe to self.historical_data.
-        # print(reqId, bar)
-        bar_df = pd.DataFrame(
-            {
-                'date': [bar.date],
-                'open': [bar.open],
-                'high': [bar.high],
-                'low': [bar.low],
-                'close': [bar.close],
-            }
-        )
         self.historical_data = pd.concat(
-            [self.historical_data, bar_df],
+            [
+                self.historical_data,
+                pd.DataFrame(
+                    {
+                        'date': [bar.date],
+                        'open': [bar.open],
+                        'high': [bar.high],
+                        'low': [bar.low],
+                        'close': [bar.close],
+                    }
+                )
+            ],
             ignore_index=True
         )
 
     def historicalDataEnd(self, reqId: int, start: str, end: str):
         self.historical_data_end = reqId
 
-    def contractDetails(self, reqId: int, contractDetails):
-        self.contract_details = contractDetails
-
     def contractDetailsEnd(self, reqId: int):
         self.contract_details_end = reqId
+
+    def symbolSamples(self, reqId:int, contractDescriptions):
+        df = pd.DataFrame(
+            columns=[
+                'con_id', 'symbol', 'sec_type', 'primary_exchange', 'currency'
+            ]
+        )
+        for contract_description in contractDescriptions:
+            df = pd.concat([
+                df,
+                pd.DataFrame({
+                    "con_id": [contract_description.contract.conId],
+                    "symbol": [contract_description.contract.symbol],
+                    "sec_type": [contract_description.contract.secType],
+                    "primary_exchange": [
+                        contract_description.contract.primaryExchange
+                    ],
+                    "currency": [contract_description.contract.currency]
+                })
+            ],
+                ignore_index=True
+            )
+        self.matching_symbols = df
