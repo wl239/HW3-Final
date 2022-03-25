@@ -30,6 +30,11 @@ class ibkr_app(EWrapper, EClient):
         self.contract_details = None
         self.contract_details_end = None
         self.matching_symbols = None
+        self.order_status = pd.DataFrame(
+            columns=['orderId', 'status', 'filled', 'remaining', 'avgFillPrice',
+                     'permId', 'parentId', 'lastFillPrice', 'clientId',
+                     'whyHeld', 'mktCapPrice']
+        )
 
     def error(self, reqId, errorCode, errorString):
         self.error_messages = pd.concat(
@@ -49,6 +54,7 @@ class ibkr_app(EWrapper, EClient):
         self.current_time = datetime.fromtimestamp(time)
 
     def historicalData(self, reqId, bar):
+
         self.historical_data = pd.concat(
             [
                 self.historical_data,
@@ -117,3 +123,53 @@ class ibkr_app(EWrapper, EClient):
                 ignore_index=True
             )
         self.matching_symbols = df
+
+    def orderStatus(self, orderId, status:str, filled:float,
+                    remaining:float, avgFillPrice:float, permId:int,
+                    parentId:int, lastFillPrice:float, clientId:int,
+                    whyHeld:str, mktCapPrice: float):
+
+        print('order status')
+        # print('orderId:' + str(orderId))
+        # print('status:' + status)
+        # print('filled:' + str(filled))
+        # print('remaining:' + str(remaining))
+        # print('avgFillPrice:' + str(avgFillPrice))
+        # print('permId:' + str(permId))
+        # print('parentId:' + str(parentId))
+        # print('lastFillPrice:' + str(lastFillPrice))
+        # print('clientId:' + str(clientId))
+        # print('whyHeld:' + str(69))
+        # print('mktCapPrice:' + str(mktCapPrice))
+
+        print(self.order_status)
+        print(type(self.order_status))
+        self.order_status = pd.concat(
+            [
+                self.order_status,
+                pd.DataFrame({
+                    'order_id': [orderId],
+                    'status': [status],
+                    'filled': [filled],
+                    'remaining': [remaining],
+                    'avg_fill_price': [avgFillPrice],
+                    'perm_id': [permId],
+                    'parent_id': [parentId],
+                    'last_fill_price': [lastFillPrice],
+                    'client_id': [clientId],
+                    'why_held': [whyHeld],
+                    'mkt_cap_price': [mktCapPrice]
+                })
+            ],
+            ignore_index=True
+        )
+        self.order_status.drop_duplicates(inplace=True)
+
+    def openOrder(self, orderId, contract, order, orderState):
+        print('open order')
+        print(contract)
+        print(order)
+        print(orderState)
+
+    def openOrderEnd(self):
+        print('open order end')
