@@ -1,6 +1,7 @@
 
 from ibapi.contract import Contract
 from fintech_ibkr import *
+import pandas as pd
 
 # Contract object: CURRENCY PAIR
 contract_cp = Contract()
@@ -33,4 +34,6 @@ print(cp_details)
 print(stk_details)
 print(crypto_details)
 
-# This script is an excellent place for scratch work as you figure this out.
+# print more columns like this:
+with pd.option_context('display.max_columns', None):
+    print(stk_details)

@@ -26,9 +26,9 @@ class ibkr_app(EWrapper, EClient):
             columns=['date', 'open', 'high', 'low', 'close', 'volume',
                      'bar_count', 'average']
         )
-        self.historical_data_end = ''
-        self.contract_details = ''
-        self.contract_details_end = ''
+        self.historical_data_end = None
+        self.contract_details = None
+        self.contract_details_end = None
         self.matching_symbols = None
 
     def error(self, reqId, errorCode, errorString):
@@ -70,6 +70,30 @@ class ibkr_app(EWrapper, EClient):
 
     def contractDetailsEnd(self, reqId: int):
         self.contract_details_end = reqId
+
+    def contractDetails(self, reqId:int, contractDetails):
+        self.contract_details = pd.DataFrame({
+            "con_id": [contractDetails.contract.conId],
+            "symbol": [contractDetails.contract.symbol],
+            "long_name": [contractDetails.longName],
+            "industry": [contractDetails.industry],
+            "category": [contractDetails.category],
+            "subcategory": [contractDetails.subcategory],
+            "sec_type": [contractDetails.contract.secType],
+            "stock_type": [contractDetails.stockType],
+            "exchange": [contractDetails.contract.exchange],
+            "primary_exchange": [contractDetails.contract.primaryExchange],
+            "currency": [contractDetails.contract.currency],
+            "local_symbol": [contractDetails.contract.localSymbol],
+            "market_name": [contractDetails.marketName],
+            "min_tick": [contractDetails.minTick],
+            "order_types": [contractDetails.orderTypes],
+            "valid_exchanges": [contractDetails.validExchanges],
+            "price_magnifier": [contractDetails.priceMagnifier],
+            "time_zone_id": [contractDetails.timeZoneId],
+            "trading_hours": [contractDetails.tradingHours],
+            "liquid_hours": [contractDetails.liquidHours]
+        })
 
     def symbolSamples(self, reqId:int, contractDescriptions):
         df = pd.DataFrame(
