@@ -6,7 +6,7 @@ import pandas as pd
 # Contract object: CURRENCY PAIR
 contract_cp = Contract()
 contract_cp.symbol = 'EUR'
-contract_cp.secType  = 'CASH'
+contract_cp.secType = 'CASH'
 contract_cp.exchange = 'IDEALPRO'  # 'IDEALPRO' is the currency exchange.
 contract_cp.currency = 'USD'
 

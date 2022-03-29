@@ -1,19 +1,20 @@
 import time
 
 import dash
+import pandas as pd
 import plotly.graph_objects as go
 from dash.dependencies import Input, Output, State
 from ibapi.contract import Contract
 from ibapi.order import Order
 from fintech_ibkr import *
 from dash import dcc
-from dash import html
+from dash import html, dash_table
 import dash_daq as daq
 from datetime import date
 
 # Make a Dash app!
 app = dash.Dash(__name__)
-
+df = pd.read_csv('submitted_orders.csv')
 # Define the layout.
 app.layout = html.Div([
     html.Div(
@@ -231,7 +232,7 @@ app.layout = html.Div([
                     style={'display': 'inline-block'}
                 )
             ],
-                style = {'display': 'inline-block'}
+                style={'display': 'inline-block'}
             )
         ]
         ),
@@ -254,25 +255,152 @@ app.layout = html.Div([
     # Another line break
     html.Br(),
     # Section title
-    html.H6("Make a Trade"),
+    html.H3("Make a trade"),
     # Div to confirm what trade was made
     html.Div(id='trade-output'),
-    # Radio items to select buy or sell
-    dcc.RadioItems(
-        id='buy-or-sell',
-        options=[
-            {'label': 'BUY', 'value': 'BUY'},
-            {'label': 'SELL', 'value': 'SELL'}
+    html.Div(
+        children=[
+            html.Label('Choose type:'),
+            dcc.Dropdown(
+                options=[
+                    {'label': 'Stock', 'value': "STK"},
+                    {'label': 'FX Pairs', 'value': 'CASH'},
+                    {'label': 'Bond', 'value': 'BOND'},
+                    {'label': 'Option', 'value': 'OPT'},
+                    {'label': 'Future', 'value': 'FUT'},
+                    {'label': 'Fund', 'value': 'FUND'},
+                    {'label': 'Crypto', 'value': 'CRYPTO'}],
+                id='sec-type',
+                value='STK'
+            ),
         ],
-        value='BUY'
+        style={
+            'width': '100px'
+        }
     ),
-    # Text input for the currency pair to be traded
-    dcc.Input(id='trade-currency', value='AUDCAD', type='text'),
-    # Numeric input for the trade amount
-    dcc.Input(id='trade-amt', value='20000', type='number'),
-    # Submit button for the trade
-    html.Button('Trade', id='trade-button', n_clicks=0)
+    html.Br(),
+    html.Div(
+        children=[
+            html.Label('Enter the Asset Symbol:'),
+            dcc.Input(
+                id='contract-symbol',
+                value='SPY',
+                type='text',
+            )
+        ],
+        style={
+            'display': 'inline-block',
+        }
+    ),
+    html.Br(),
+    html.Br(),
+    html.Div(
+        children=[
+            html.Label('Enter the Currency:'),
+            dcc.Input(
+                id='currency',
+                value='USD',
+                type='text',
+            )
+        ],
+        style={
+            'display': 'inline-block',
+        }
+    ),
+    html.Br(),
+    html.Br(),
+    html.Div(
+        children=[
+            html.Label('Enter the Exchange:'),
+            dcc.Input(
+                id='exchange',
+                value='SMART',
+                type='text',
+            )
+        ],
+        style={
+            'display': 'inline-block',
+        }
+    ),
+    html.Br(),
+    html.Br(),
+    html.Div(
+        children=[
+            html.Label('Enter the Primary Exchange:'),
+            dcc.Input(
+                id='primary-exchange',
+                value='ARCA',
+                type='text',
+            )
+        ],
+        style={
+            'display': 'inline-block',
 
+        }
+    ),
+    html.Br(),
+    html.Br(),
+    # market order or limit order
+    html.Div(
+        children=[
+            html.Div(
+                children=[
+                    dcc.RadioItems(
+                        id='mkt-or-lmt',
+                        options=[
+                            {'label': 'Market', 'value': 'MKT'},
+                            {'label': 'Limit', 'value': 'LMT'}
+                        ],
+                        value='MKT'
+                    )
+                ],
+            ),
+            html.Div(
+                children=[
+                    # Radio items to select buy or sell
+                    dcc.RadioItems(
+                        id='buy-or-sell',
+                        options=[
+                            {'label': 'BUY', 'value': 'BUY'},
+                            {'label': 'SELL', 'value': 'SELL'}
+                        ],
+                        value='BUY'
+                    )
+                ],
+            ),
+            html.Br(),
+            html.Div(
+                children=[
+                    html.Label('Enter limit price:'),
+                    dcc.Input(
+                        id='limit-price',
+                        type='number',
+                    )
+                ],
+            ),
+        ]
+    ),
+    html.Br(),
+    # Numeric input for the trade amount
+    html.Div(
+        children=[
+            html.Label('Enter the Trade Amount:'),
+            dcc.Input(
+                id='trade-amt',
+                value='2000',
+                type='number',
+            )
+        ],
+        style={
+            'display': 'inline-block',
+        }
+    ),
+    html.Br(),
+    html.Br(),
+    # Submit button for the trade
+    html.Button('Trade', id='trade-button', n_clicks=0),
+
+    dash_table.DataTable(df.to_dict('records'))  #, [{"name": i, "id": i} for i in df.columns], id='table')
 ])
 
 @app.callback(
@@ -286,8 +414,7 @@ app.layout = html.Div([
 def update_connect_indicator(n_clicks, host, port, clientid):
     try:
         managed_accounts = fetch_managed_accounts(host, port, clientid)
-        message = "Connection successful! Managed accounts: " + ", ".join(
-            managed_accounts)
+        message = "Connection successful! Managed accounts: " + ", ".join(managed_accounts)
         sync_connection_status = "True"
     except Exception as inst:
         x, y, z = inst.args
@@ -329,18 +456,17 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
     # First things first -- what currency pair history do you want to fetch?
     # Define it as a contract object!
     contract = Contract()
-    contract.symbol   = currency_string.split(".")[0]
+    contract.symbol = currency_string.split(".")[0]
     contract.secType  = 'CASH'
     contract.exchange = 'IDEALPRO' # 'IDEALPRO' is the currency exchange.
     contract.currency = currency_string.split(".")[1]
 
     try:
-        contract_details = fetch_contract_details(contract, hostname=host,
-                                                  port=port, client_id=clientid)
+        contract_details = fetch_contract_details(contract, hostname=host, port=port, client_id=clientid)
     except:
         return ("No contract found for " + currency_string), go.Figure()
 
-    contract_symbol_ibkr = str(contract_details).split(",")[10]
+    contract_symbol_ibkr = contract_details.symbol[0]+'.'+contract_details.currency[0]
 
     # If the contract name doesn't equal the one you want:
     if not contract_symbol_ibkr == currency_string:
@@ -413,25 +539,70 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
     Input('trade-button', 'n_clicks'),
     # We DON'T want to run this function whenever buy-or-sell, trade-currency,
     #   or trade-amt is updated, so we pass those in as States, not Inputs:
-    [State('buy-or-sell', 'value'), State('trade-currency', 'value'),
+    [State('sec-type','value'), State('contract-symbol', 'value'), State('currency','value'),
+     State('exchange', 'value'), State('primary-exchange', 'value'), State('mkt-or-lmt', 'value'),
+     State('buy-or-sell', 'value'), State('limit-price', 'value'),
      State('trade-amt', 'value'), State("host", "value"),
      State("port", "value"), State("clientid", "value")],
     # DON'T start executing trades just because n_clicks was initialized to 0!!!
     prevent_initial_call=True
 )
-def trade(n_clicks, action, trade_currency, trade_amt, host, port, clientid):
+def trade(n_clicks, sec_type, contract_symbol, currency, exchange, primary_exchange,
+          mkt_or_lmt, action, limit_price, trade_amt, host, port, clientid):
     # Still don't use n_clicks, but we need the dependency
 
     # Make the message that we want to send back to trade-output
-    msg = action + ' ' + trade_amt + ' ' + trade_currency
+    msg = action + ' ' + str(trade_amt) + ' ' + contract_symbol
+    contract = Contract()
+    contract.symbol = contract_symbol
+    contract.secType = sec_type
+    contract.exchange = exchange
+    contract.currency = currency
+    if primary_exchange is not None:
+        contract.primaryExchange = primary_exchange
 
     order = Order()
     order.action = action
-    order.orderType = "MKT"
+    order.orderType = mkt_or_lmt
     order.totalQuantity = trade_amt
 
+    if mkt_or_lmt == 'LMT':
+        if limit_price is None:
+            return "Invalid Limit price"
+        order.lmtPrice = limit_price
+
+    fetch_contract_details(contract)
+
+    allInfo = place_order(contract, order)
+    order_id = allInfo['order_id'][0]
+    time = fetch_current_time(host, port, clientid)    # fetch_current_time()
+    client_id = allInfo['client_id'][0]
+    perm_id = allInfo['perm_id'][0]
+    con_id = contract.conId
+
+    trade_data = {
+        'timestamp': time,
+        'order_id': order.orderId,
+        'client_id': clientid,
+        'perm_id': perm_id,
+        'con_id': contract.conId,
+        'symbol': contract.symbol,
+        'action': action,
+        'size': trade_amt,
+        'order_type': order.orderType,
+        'lmt_price': limit_price
+    }
+
+    file_path = 'submitted_orders.csv'
+    df = pd.read_csv(file_path, index_col=0)
+    index = ['timestamp', 'order_id', 'client_id', 'perm_id',
+             'con_id', 'symbol', 'action', 'size', 'order_type', 'lmt_price']
+    df = pd.concat([df, pd.DataFrame(trade_data, index=[0])], ignore_index=True).set_index(index)
+    df.to_csv(file_path)
+
+    print("successful!")
     # Return the message, which goes to the trade-output div's children
-    return msg
+    return msg, df.to_dict('records')
 
 # Run it!
 if __name__ == '__main__':
