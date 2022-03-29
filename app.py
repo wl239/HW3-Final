@@ -23,25 +23,27 @@ app.layout = html.Div([
         style={'display': 'none'}
     ),
     # Section title
-    html.H3("Section 1: Fetch & Display exchange rate historical data"),
+    html.H2("Section 1: Fetch & Display exchange rate historical data"),
     html.Div([
-        html.H4("Select value for whatToShow:"),
+        html.H3("Select value for whatToShow:"),
         html.Div(
             dcc.Dropdown(
                 ["MIDPOINT", "BID", "ASK", "BID_ASK", "HISTORICAL_VOLATILITY"],
                 "MIDPOINT",
                 id='what-to-show'
-            )
+            ),
+            style={'width': '300px'}
         ),
-        html.H4("Select value for endDateTime:"),
+        html.Br(),
+        html.H3("Select value for endDateTime:"),
         html.Div(
             children=[
                 html.P(
-                    "You may select a specific endDateTime for the call to " + \
-                    "fetch_historical_data. If any of the below is empty, " + \
-                    "the current present moment will be used."
+                    "You may select a specific endDateTime for the call to fetch_historical_data. " +
+                    "If any of the below is empty, the current present moment will be used."
                 )
-            ]
+            ],
+            style={'width': '490px'}
         ),
         html.Div(
             children=[
@@ -50,19 +52,17 @@ app.layout = html.Div([
                         html.Label('Date:'),
                         dcc.DatePickerSingle(id='edt-date')
                     ],
-                    style={
-                        'display': 'inline-block',
-                        'margin-right': '20px',
-                    }
                 ),
+                html.Br(),
                 html.Div(
                     children=[
                         html.Label('Hour:'),
                         dcc.Dropdown(list(range(24)), id='edt-hour'),
                     ],
                     style={
+                        'width': '15%',
                         'display': 'inline-block',
-                        'padding-right': '5px'
+                        'padding-right': '15px'
                     }
                 ),
                 html.Div(
@@ -71,8 +71,9 @@ app.layout = html.Div([
                         dcc.Dropdown(list(range(60)), id='edt-minute'),
                     ],
                     style={
+                        'width': '15%',
                         'display': 'inline-block',
-                        'padding-right': '5px'
+                        'padding-right': '15px'
                     }
                 ),
                 html.Div(
@@ -80,16 +81,17 @@ app.layout = html.Div([
                         html.Label('Second:'),
                         dcc.Dropdown(list(range(60)), id='edt-second'),
                     ],
-                    style={'display': 'inline-block'}
+                    style={'width': '15%', 'display': 'inline-block'}
                 )
             ]
         ),
-        html.H4(
+        html.Br(),
+        html.H3(
             "Select value for barSizeSetting:",
             style={'display': 'inline-block'}
         ),
         dcc.Dropdown(
-            options = [
+            options=[
                 '1 secs', '5 secs', '10 secs', '15 secs', '30 secs', '1 min',
                 '2 mins', '3 mins',	'5 mins', '10 mins', '15 mins',
                 '20 mins', '30 mins', '1 hour',	'2 hours',	'3 hours',
@@ -98,13 +100,14 @@ app.layout = html.Div([
             id='bar-size',
             value='1 hour',
             style={
-                'width': '75px',
+                'width': '100px',
                 'display': 'inline-block',
                 'vertical-align': 'middle',
                 'padding-left': '15px'
             }
         ),
-        html.H4("Select value for durationStr:"),
+        html.Br(),
+        html.H3("Select value for durationStr:"),
         html.Div(
             children=[
                 html.Div(
@@ -150,7 +153,8 @@ app.layout = html.Div([
                 )
             ]
         ),
-        html.H4("Use RTH?", style={'display': 'inline-block'}),
+        html.Br(),
+        html.H3("Use RTH?", style={'display': 'inline-block'}),
         html.Div(
             children=[
                 html.P("NO", style={'display': 'inline-block'}),
@@ -163,7 +167,8 @@ app.layout = html.Div([
             ],
             style={'display': 'inline-block', 'padding-left': '10px'}
         ),
-        html.H4("Enter a currency pair:"),
+        html.Br(),
+        html.H3("Enter a currency pair:"),
         html.P(
             children=[
                 "See the various currency pairs here: ",
@@ -185,17 +190,19 @@ app.layout = html.Div([
         ),
         # Submit button
         html.Button('Submit', id='submit-button', n_clicks=0),
+        html.Br(),
+        html.Br(),
         # Div for initial instructions and the updated info once submit is pressed
         html.Div(
             id='currency-output',
             children='Enter a currency code and press submit'),
     ],
-        style={'width': '405px', 'display': 'inline-block'}
+        style={'width': '550px', 'display': 'inline-block'}
     ),
     html.Div([
         html.Div([
             html.Div([
-                html.H4(
+                html.H3(
                     'Hostname: ',
                     style={'display': 'inline-block', 'margin-right': 20}
                 ),
@@ -205,10 +212,10 @@ app.layout = html.Div([
                     type='text',
                     style={'display': 'inline-block'}
                 )],
-                style = {'display': 'inline-block'}
+                style={'display': 'inline-block'}
             ),
             html.Div([
-                html.H4(
+                html.H3(
                     'Port: ',
                     style={'display': 'inline-block', 'margin-right': 59}
                 ),
@@ -221,7 +228,7 @@ app.layout = html.Div([
                 style = {'display': 'inline-block'}
             ),
             html.Div([
-                html.H4(
+                html.H3(
                     'Client ID: ',
                     style={'display': 'inline-block', 'margin-right': 27}
                 ),
@@ -249,13 +256,13 @@ app.layout = html.Div([
     # Div to hold the candlestick graph
     dcc.Loading(
         id="loading-1",
-        type="default",
+        type="circle", color='#7BC043',
         children=html.Div([dcc.Graph(id='candlestick-graph')])
     ),
     # Another line break
     html.Br(),
     # Section title
-    html.H3("Make a trade"),
+    html.H2("Section 2: Make a trade"),
     # Div to confirm what trade was made
     html.Div(id='trade-output'),
     html.Div(
@@ -265,17 +272,15 @@ app.layout = html.Div([
                 options=[
                     {'label': 'Stock', 'value': "STK"},
                     {'label': 'FX Pairs', 'value': 'CASH'},
+                    {'label': 'Crypto', 'value': 'CRYPTO'},
                     {'label': 'Bond', 'value': 'BOND'},
-                    {'label': 'Option', 'value': 'OPT'},
-                    {'label': 'Future', 'value': 'FUT'},
-                    {'label': 'Fund', 'value': 'FUND'},
-                    {'label': 'Crypto', 'value': 'CRYPTO'}],
+                    {'label': 'Fund', 'value': 'FUND'}],
                 id='sec-type',
                 value='STK'
             ),
         ],
         style={
-            'width': '100px'
+            'width': '150px'
         }
     ),
     html.Br(),
@@ -387,7 +392,7 @@ app.layout = html.Div([
             html.Label('Enter the Trade Amount:'),
             dcc.Input(
                 id='trade-amt',
-                value='2000',
+                value='200',
                 type='number',
             )
         ],
@@ -399,8 +404,10 @@ app.layout = html.Div([
     html.Br(),
     # Submit button for the trade
     html.Button('Trade', id='trade-button', n_clicks=0),
-
-    dash_table.DataTable(df.to_dict('records'))  #, [{"name": i, "id": i} for i in df.columns], id='table')
+    html.Br(),
+    html.Br(),
+    dash_table.DataTable(df.to_dict('records')),  #, [{"name": i, "id": i} for i in df.columns], id='table')
+    html.Br()
 ])
 
 @app.callback(
@@ -470,7 +477,7 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
 
     # If the contract name doesn't equal the one you want:
     if not contract_symbol_ibkr == currency_string:
-        return ("Requested contract: " + currency_string + " but received " + \
+        return ("Requested contract: " + currency_string + " but received " +
                 "contract: " + contract_symbol_ibkr), go.Figure()
 
     if any([i is None for i in [edt_date, edt_hour, edt_minute, edt_second]]):
@@ -574,11 +581,10 @@ def trade(n_clicks, sec_type, contract_symbol, currency, exchange, primary_excha
     fetch_contract_details(contract)
 
     allInfo = place_order(contract, order)
-    order_id = allInfo['order_id'][0]
+    # order_id = allInfo['order_id'][0]
     time = fetch_current_time(host, port, clientid)    # fetch_current_time()
-    client_id = allInfo['client_id'][0]
+    # client_id = allInfo['client_id'][0]
     perm_id = allInfo['perm_id'][0]
-    con_id = contract.conId
 
     trade_data = {
         'timestamp': time,
@@ -594,15 +600,16 @@ def trade(n_clicks, sec_type, contract_symbol, currency, exchange, primary_excha
     }
 
     file_path = 'submitted_orders.csv'
-    df = pd.read_csv(file_path, index_col=0)
+    df_file = pd.read_csv(file_path, index_col=0)
     index = ['timestamp', 'order_id', 'client_id', 'perm_id',
              'con_id', 'symbol', 'action', 'size', 'order_type', 'lmt_price']
-    df = pd.concat([df, pd.DataFrame(trade_data, index=[0])], ignore_index=True).set_index(index)
-    df.to_csv(file_path)
+    df_file = pd.concat([df_file, pd.DataFrame(trade_data, index=[0])], ignore_index=True).set_index(index)
+    df_file.to_csv(file_path)
 
-    print("successful!")
+    print("Successful!")
+
     # Return the message, which goes to the trade-output div's children
-    return msg, df.to_dict('records')
+    return msg, df_file.to_dict('records')
 
 # Run it!
 if __name__ == '__main__':
